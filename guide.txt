@@ -1,0 +1,16 @@
+### how to deploy in vercel
+
+npx vercel
+yes
+no
+dir: ./
+no
+finally get an link: 
+
+
+#### how to connect prisma as sqlite database ######
+:npm install prisma
+:npx prisma init --datasource-provider sqlite
+>add modal to schema.prisma
+:npx prisma migrate dev  
+>give a name of migration like add Snippet
