@@ -32,27 +32,51 @@ const EditableGridForm = () => {
     page: 0,
   });
 
+    // Mock function to fetch previous reading
+    const fetchPrevReading = async (seqno: string, chkDigit: string) => {
+        // Replace this with your actual API call or logic
+        return new Promise<string>((resolve) => {
+          setTimeout(() => {
+            resolve('10'); 
+          }, 500);
+        });
+      };
+
   // Function to handle row updates
-  const handleProcessRowUpdate = (newRow: any) => {
-    const updatedRow = {
-      ...newRow,
-      qnty:
-        newRow.presentReading && newRow.prevReading
-          ? Number(newRow.presentReading) - Number(newRow.prevReading)
-          : '', 
-    };
+  const handleProcessRowUpdate = async(newRow: any) => {
+    const { id, seqno, chkDigit, presentReading, prevReading } = newRow;
 
-    setRows((prevRows) =>
-      prevRows.map((row) => (row.id === updatedRow.id ? updatedRow : row))
-    );
-
-    // Dynamically add a new row if the last row is edited
-    if (newRow.id === rows[rows.length - 1].id) {
-      handleAddNewRow();
-    }
-
-    toast.success('Row successfully updated!');
-    return updatedRow;
+    if (seqno && chkDigit) {
+        try {
+          const fetchedPrevReading = await fetchPrevReading(seqno, chkDigit);
+  
+          // Update row with fetched previous reading
+          const updatedRow = {
+            ...newRow,
+            prevReading: fetchedPrevReading,
+            qnty:
+              presentReading && fetchedPrevReading
+                ? Number(presentReading) - Number(fetchedPrevReading)
+                : '',
+          };
+  
+          setRows((prevRows) =>
+            prevRows.map((row) => (row.id === updatedRow.id ? updatedRow : row))
+          );
+  
+          // Dynamically add a new row if the last row is edited
+          if (newRow.id === rows[rows.length - 1].id) {
+            handleAddNewRow();
+          }
+  
+          toast.success('Row successfully updated!');
+          return updatedRow;
+        } catch (error) {
+          toast.error('Failed to fetch previous reading');
+          console.error('Error fetching previous reading:', error);
+          throw error;
+        }
+      }
   };
 
   // Function to add a new row
@@ -63,7 +87,7 @@ const EditableGridForm = () => {
       seqno: "",
       chkDigit: "",
       presentReading: "",
-      prevReading: "1",
+      prevReading: "",
       qnty: "",
     };
 
@@ -131,7 +155,7 @@ const EditableGridForm = () => {
         width: 100,
         getActions: (params) => [
           <GridActionsCellItem
-            icon={<CheckCircleOutlineSharpIcon className="text-blue-400" />}
+            icon={<CheckCircleOutlineSharpIcon className="text-blue-500" />}
             label="Save"
             onClick={() => handleSaveRow(params.id)}
             // showInMenu
