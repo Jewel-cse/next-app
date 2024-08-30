@@ -6,9 +6,13 @@ import {
   useGridApiRef,
   GridRowId,
   GridPaginationModel,
+  GridActionsCellItem,
 } from "@mui/x-data-grid";
 import { useState } from "react";
 import toast from "react-hot-toast";
+import { IconButton } from "@mui/material";
+import RemoveCircleOutlineSharpIcon from '@mui/icons-material/RemoveCircleOutlineSharp';
+import CheckCircleOutlineSharpIcon from '@mui/icons-material/CheckCircleOutlineSharp';
 
 const EditableGridForm = () => {
   const apiRef = useGridApiRef();
@@ -35,7 +39,7 @@ const EditableGridForm = () => {
       qnty:
         newRow.presentReading && newRow.prevReading
           ? Number(newRow.presentReading) - Number(newRow.prevReading)
-          : "",
+          : '', 
     };
 
     setRows((prevRows) =>
@@ -47,7 +51,7 @@ const EditableGridForm = () => {
       handleAddNewRow();
     }
 
-    toast.success("Row successfully updated!");
+    toast.success('Row successfully updated!');
     return updatedRow;
   };
 
@@ -63,24 +67,7 @@ const EditableGridForm = () => {
       qnty: "",
     };
 
-    setRows((prevRows) => {
-      const updatedRows = [...prevRows, newRow];
-
-      // Calculate the total rows and current page
-      const totalRows = updatedRows.length;
-      const currentPage = paginationModel.page;
-      const rowsPerPage = paginationModel.pageSize;
-
-      // Check if we need to advance the page
-      if (totalRows > (currentPage + 1) * rowsPerPage) {
-        setPaginationModel({
-          ...paginationModel,
-          page: currentPage + 1,
-        });
-      }
-
-      return updatedRows;
-    });
+    setRows((prevRows) => [...prevRows, newRow]);
 
     // Focus on the new row
     setTimeout(() => {
@@ -114,6 +101,12 @@ const EditableGridForm = () => {
       apiRef.current.setCellFocus(params.id, nextField);
     }
   };
+  function handleSaveRow(id:any){
+    console.log('Save params with id : ',id);
+  }
+  function handleDeleteRow(id:any){
+    console.log('Delete params with id : ',id);
+  }
 
   const columns: GridColDef[] = [
     { field: "seqno", headerName: "Seq No", editable: true, flex: 1 },
@@ -131,6 +124,27 @@ const EditableGridForm = () => {
       flex: 1,
     },
     { field: "qnty", headerName: "Consum Quantity", editable: false, flex: 1 },
+    {
+        field: "actions",
+        headerName: "Actions",
+        type: "actions",
+        width: 100,
+        getActions: (params) => [
+          <GridActionsCellItem
+            icon={<CheckCircleOutlineSharpIcon className="text-blue-400" />}
+            label="Save"
+            onClick={() => handleSaveRow(params.id)}
+            // showInMenu
+          />,
+          <GridActionsCellItem
+            icon={<RemoveCircleOutlineSharpIcon className="text-red-500"/>}
+
+            label="Delete"
+            onClick={() => handleDeleteRow(params.id)}
+            // showInMenu
+          />,
+        ],
+      },
   ];
 
   return (
@@ -154,10 +168,11 @@ const EditableGridForm = () => {
         editMode="row"
         rowModesModel={rowModesModel}
         onRowModesModelChange={setRowModesModel}
+
         pagination
         paginationModel={paginationModel}
         onPaginationModelChange={(newModel) => setPaginationModel(newModel)}
-        pageSizeOptions={[5, 10, 20]}
+        pageSizeOptions={[5, 10, 20]} 
 
         // experimentalFeatures={{ newEditingApi: true }}
       />
