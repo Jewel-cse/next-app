@@ -1,0 +1,168 @@
+import {
+  DataGrid,
+  GridColDef,
+  GridRowsProp,
+  GridRowModesModel,
+  useGridApiRef,
+  GridRowId,
+  GridPaginationModel,
+} from "@mui/x-data-grid";
+import { useState } from "react";
+import toast from "react-hot-toast";
+
+const EditableGridForm = () => {
+  const apiRef = useGridApiRef();
+  const [rows, setRows] = useState<GridRowsProp>([
+    {
+      id: 1,
+      seqno: "",
+      chkDigit: "",
+      presentReading: "",
+      prevReading: "",
+      qnty: "",
+    },
+  ]);
+  const [rowModesModel, setRowModesModel] = useState<GridRowModesModel>({});
+  const [paginationModel, setPaginationModel] = useState<GridPaginationModel>({
+    pageSize: 5,
+    page: 0,
+  });
+
+  // Function to handle row updates
+  const handleProcessRowUpdate = (newRow: any) => {
+    const updatedRow = {
+      ...newRow,
+      qnty:
+        newRow.presentReading && newRow.prevReading
+          ? Number(newRow.presentReading) - Number(newRow.prevReading)
+          : "",
+    };
+
+    setRows((prevRows) =>
+      prevRows.map((row) => (row.id === updatedRow.id ? updatedRow : row))
+    );
+
+    // Dynamically add a new row if the last row is edited
+    if (newRow.id === rows[rows.length - 1].id) {
+      handleAddNewRow();
+    }
+
+    toast.success("Row successfully updated!");
+    return updatedRow;
+  };
+
+  // Function to add a new row
+  const handleAddNewRow = () => {
+    const newId = rows.length ? Math.max(...rows.map((row) => row.id)) + 1 : 1;
+    const newRow = {
+      id: newId,
+      seqno: "",
+      chkDigit: "",
+      presentReading: "",
+      prevReading: "1",
+      qnty: "",
+    };
+
+    setRows((prevRows) => {
+      const updatedRows = [...prevRows, newRow];
+
+      // Calculate the total rows and current page
+      const totalRows = updatedRows.length;
+      const currentPage = paginationModel.page;
+      const rowsPerPage = paginationModel.pageSize;
+
+      // Check if we need to advance the page
+      if (totalRows > (currentPage + 1) * rowsPerPage) {
+        setPaginationModel({
+          ...paginationModel,
+          page: currentPage + 1,
+        });
+      }
+
+      return updatedRows;
+    });
+
+    // Focus on the new row
+    setTimeout(() => {
+      apiRef.current.setCellFocus(newId, "seqno");
+    }, 500);
+  };
+
+  // Function to handle key pres (left- right)
+  const handleCellKeyDown = (
+    params: { field: string; id: GridRowId },
+    event: { key: string; preventDefault: () => void }
+  ) => {
+    if (event.key === "ArrowRight") {
+      event.preventDefault();
+
+      const fieldIndex = columns.findIndex((col) => col.field === params.field);
+      const nextField = columns[(fieldIndex + 1) % columns.length].field;
+
+      // Move focus to the next cell
+      apiRef.current.setCellFocus(params.id, nextField);
+    } else if (event.key === "ArrowLeft") {
+      event.preventDefault();
+
+      const fieldIndex = columns.findIndex((col) => col.field === params.field);
+      if (fieldIndex == 0) {
+        return;
+      }
+      const nextField = columns[(fieldIndex - 1) % columns.length].field;
+
+      // Move focus to the next cell
+      apiRef.current.setCellFocus(params.id, nextField);
+    }
+  };
+
+  const columns: GridColDef[] = [
+    { field: "seqno", headerName: "Seq No", editable: true, flex: 1 },
+    { field: "chkDigit", headerName: "Chk Digit", editable: true, flex: 1 },
+    {
+      field: "presentReading",
+      headerName: "Present Reading",
+      editable: true,
+      flex: 1,
+    },
+    {
+      field: "prevReading",
+      headerName: "Previous Reading",
+      editable: true,
+      flex: 1,
+    },
+    { field: "qnty", headerName: "Consum Quantity", editable: false, flex: 1 },
+  ];
+
+  return (
+    <div style={{ height: "auto", width: "100%" }}>
+      <DataGrid
+        sx={{
+          "& .MuiDataGrid-columnHeader": {
+            backgroundColor: "#0069db",
+            color: "#ffff",
+            font: "bold",
+          },
+        }}
+        columnHeaderHeight={35}
+        rowHeight={30}
+        rows={rows}
+        columns={columns}
+        apiRef={apiRef}
+        processRowUpdate={handleProcessRowUpdate}
+        // onRowEditStop={handleAddNewRow}
+        onCellKeyDown={handleCellKeyDown} // Handle keydown events
+        editMode="row"
+        rowModesModel={rowModesModel}
+        onRowModesModelChange={setRowModesModel}
+        pagination
+        paginationModel={paginationModel}
+        onPaginationModelChange={(newModel) => setPaginationModel(newModel)}
+        pageSizeOptions={[5, 10, 20]}
+
+        // experimentalFeatures={{ newEditingApi: true }}
+      />
+    </div>
+  );
+};
+
+export default EditableGridForm;
